@@ -177,13 +177,51 @@ class Parser{
         if(match({TokenType::PRINT})){
             return printStatement();
         }
+        else if(match({TokenType::FOR})){
+            return forStatement();
+        }
         else if(match({TokenType::IF})){
-            Stmt*ans =  ifstatement();
-            return ans;
+           return ifstatement();
         }
         else if(match({TokenType::LEFT_BRACE}))return new Block(block());
         else if(match({TokenType::WHILE}))return whileStatement();
         return expressionStatement();
+    }
+    Stmt* forStatement(){
+        consume(TokenType::LEFT_PAREN,"Expected '(' after 'for'");
+        Stmt* initializer;
+        if(match({TokenType::SEMICOLON})){
+            initializer = NULL;
+        }
+        else if(match({TokenType::VAR})){
+            initializer = varDeclaration();
+        }
+        else{
+            initializer = expressionStatement(); 
+        }
+        Expr* condition = NULL;
+        if(!check(TokenType::SEMICOLON)){
+            condition = expression();
+        }
+        consume(TokenType::SEMICOLON,"Expect ';' after loop condition.");
+        Expr*increment = NULL;
+        if(!check(TokenType::RIGHT_PAREN)){
+            increment = expression();
+        }
+        consume(TokenType::RIGHT_PAREN,"Expect ')' after increment expression");
+        Stmt*body = statement();
+
+        if(increment != NULL){
+            body = new Block({body,new Expression(increment)});
+        }
+
+        if(condition == NULL)condition = new Literal("true");
+        body = new WhileStmt(condition,body);
+
+        if(initializer != NULL){
+            body = new Block({initializer,body});
+        }
+        return body;
     }
     Stmt* ifstatement(){
         consume(TokenType::LEFT_PAREN,"Expected ( ");
